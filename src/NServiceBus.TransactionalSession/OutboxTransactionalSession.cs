@@ -54,7 +54,7 @@
             await outboxStorage.Store(outboxMessage, outboxTransaction, Context)
                 .ConfigureAwait(false);
 
-            if (synchronizedStorageSession != null)
+            if (synchronizedStorageSession?.AdaptedSession != null)
             {
                 await synchronizedStorageSession.CompleteAsync().ConfigureAwait(false);
             }
