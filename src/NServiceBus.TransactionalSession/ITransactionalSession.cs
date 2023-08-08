@@ -68,5 +68,10 @@
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         Task Commit(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Custom Implementation for Ecdt
+        /// </summary>
+        Task InitManualSessioMode(object manualSession, OpenSessionOptions options, CancellationToken cancellationToken = default);
     }
 }

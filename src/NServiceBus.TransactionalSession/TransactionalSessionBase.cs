@@ -23,17 +23,35 @@ namespace NServiceBus.TransactionalSession
             pendingOperations = new PendingTransportOperations();
         }
 
-        public SynchronizedStorageSession SynchronizedStorageSession
+
+        public object manualSessionData;
+
+        public object ManualSessionData
         {
             get
             {
-                if (!IsOpen)
+                if (manualSessionData == null)
                 {
                     throw new InvalidOperationException(
                         "The session has to be opened before accessing the SynchronizedStorageSession.");
                 }
 
-                return synchronizedStorageSession.AdaptedSession;
+                return manualSessionData;
+            }
+        }
+
+        public SynchronizedStorageSession _synchronizedStorageSession;
+        public SynchronizedStorageSession SynchronizedStorageSession
+        {
+            get
+            {
+                if (_synchronizedStorageSession == null)
+                {
+                    throw new InvalidOperationException(
+                        "The session has to be opened before accessing the SynchronizedStorageSession.");
+                }
+
+                return _synchronizedStorageSession;
             }
         }
 
@@ -41,7 +59,7 @@ namespace NServiceBus.TransactionalSession
         {
             get
             {
-                if (!IsOpen)
+                if (synchronizedStorageSession == null)
                 {
                     throw new InvalidOperationException(
                         "The session has to be opened before accessing the SessionId.");
@@ -53,15 +71,17 @@ namespace NServiceBus.TransactionalSession
 
         protected ContextBag Context => options.Extensions;
 
-        protected bool IsOpen => options != null;
+        protected bool IsOpen { get; private set; }
 
         public async Task Commit(CancellationToken cancellationToken = default)
         {
-            ThrowIfInvalidState();
+            ThrowIfDisposed();
+            ThrowIfNotOpened();
 
             await CommitInternal(cancellationToken).ConfigureAwait(false);
 
             committed = true;
+            IsOpen = false;
         }
 
 
@@ -77,6 +97,39 @@ namespace NServiceBus.TransactionalSession
                 throw new InvalidOperationException($"This session is already open. {nameof(ITransactionalSession)}.{nameof(ITransactionalSession.Open)} should only be called once.");
             }
 
+            this.options = options;
+            IsOpen = true;
+
+            foreach (var customization in customizations)
+            {
+                customization.Apply(this.options);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        internal virtual Task OpenWithoutTransaction(CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+
+            if (IsOpen)
+            {
+                throw new InvalidOperationException($"This session is already open. {nameof(ITransactionalSession)}.{nameof(ITransactionalSession.Open)} should only be called once.");
+            }
+
+            IsOpen = true;
+            committed = false;
+
+            return Task.CompletedTask;
+        }
+
+        public virtual Task InitManualSessioMode(object manualSession, OpenSessionOptions options, CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task InitOptions(OpenSessionOptions options, CancellationToken cancellationToken = default)
+        {
             this.options = options;
 
             foreach (var customization in customizations)

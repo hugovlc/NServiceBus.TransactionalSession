@@ -54,7 +54,10 @@
             await outboxStorage.Store(outboxMessage, outboxTransaction, Context)
                 .ConfigureAwait(false);
 
-            await synchronizedStorageSession.CompleteAsync().ConfigureAwait(false);
+            if (synchronizedStorageSession != null)
+            {
+                await synchronizedStorageSession.CompleteAsync().ConfigureAwait(false);
+            }
 
             await outboxTransaction.Commit().ConfigureAwait(false);
         }
@@ -141,15 +144,34 @@
             throw new Exception($"Unknown delivery constraint {constraint.GetType().FullName}");
         }
 
+        public override async Task InitManualSessioMode(object manualSession, OpenSessionOptions options, CancellationToken cancellationToken = default)
+        {
+            await InitOptions(options, cancellationToken).ConfigureAwait(false);
+            manualSessionData = manualSession;
+
+            await base.InitManualSessioMode(manualSessionData, options, cancellationToken).ConfigureAwait(false);
+        }
+
         public override async Task Open(OpenSessionOptions options, CancellationToken cancellationToken = default)
         {
-            await base.Open(options, cancellationToken).ConfigureAwait(false);
-
-            outboxTransaction = await outboxStorage.BeginTransaction(Context).ConfigureAwait(false);
-
-            if (!await synchronizedStorageSession.TryOpen(outboxTransaction, Context).ConfigureAwait(false))
+            if (manualSessionData != null)
             {
-                throw new Exception("Outbox and synchronized storage persister are not compatible.");
+                options.Extensions.Set("ManualSessionData", ManualSessionData);
+                await InitOptions(options, cancellationToken).ConfigureAwait(false);
+                await OpenWithoutTransaction(cancellationToken).ConfigureAwait(false);
+
+                outboxTransaction = await outboxStorage.BeginTransaction(Context).ConfigureAwait(false);
+            }
+            else
+            {
+                await base.Open(options, cancellationToken).ConfigureAwait(false);
+
+                outboxTransaction = await outboxStorage.BeginTransaction(Context).ConfigureAwait(false);
+
+                if (!await synchronizedStorageSession.TryOpen(outboxTransaction, Context).ConfigureAwait(false))
+                {
+                    throw new Exception("Outbox and synchronized storage persister are not compatible.");
+                }
             }
         }
 

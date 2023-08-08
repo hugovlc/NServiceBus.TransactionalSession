@@ -5,6 +5,7 @@
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>..\NServiceBus.snk</AssemblyOriginatorKeyFile>
     <LangVersion>10.0</LangVersion>
+    <PackageOutputPath>\\document1\workspace\DotNet Products\packages</PackageOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
