@@ -66,14 +66,14 @@
                 return;
             }
 
-            context.Pipeline.Register(static sp =>
-                    new TransactionalSessionDelayControlMessageBehavior(
-                        sp.Build<IDispatchMessages>(),
-                        sp.Build<InformationHolderToAvoidClosures>().LocalAddress),
-                "Transaction commit control message delay behavior");
+            //context.Pipeline.Register(static sp =>
+            //        new TransactionalSessionDelayControlMessageBehavior(
+            //            sp.Build<IDispatchMessages>(),
+            //            sp.Build<InformationHolderToAvoidClosures>().LocalAddress),
+            //    "Transaction commit control message delay behavior");
 
-            context.Pipeline.Register(new TransactionalSessionControlMessageExceptionBehavior(),
-                "Transaction commit control message delay acknowledgement behavior");
+            //context.Pipeline.Register(new TransactionalSessionControlMessageExceptionBehavior(),
+            //    "Transaction commit control message delay acknowledgement behavior");
         }
 
         // This class is a bit of a weird mix of things that are set upfront and things that are set
